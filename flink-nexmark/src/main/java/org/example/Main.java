@@ -1,5 +1,6 @@
 package org.example;
 
+import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.example.data.Auction;
@@ -15,6 +16,9 @@ import org.example.queries.Query4;
 public class Main {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        env.setMaxParallelism(1);
+        //env.disableOperatorChaining();
 
         if (args.length == 0) {
             System.out.println("No query specified");

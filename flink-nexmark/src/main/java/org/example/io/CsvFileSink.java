@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 public class CsvFileSink {
     public static <T> void write(DataStream<T> stream, Class<T> c, String relativePath) {
         stream
-                .map(new Throughput<>(relativePath))
                 .sinkTo(FileSink
                         .forRowFormat(
                                 new Path(System.getProperty("user.dir") + "/" + relativePath),

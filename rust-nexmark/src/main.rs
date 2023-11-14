@@ -244,14 +244,14 @@ fn query4(join_set: &mut JoinSet<()>) {
 
 fn main() {
     std::env::set_current_dir(std::env!("CARGO_MANIFEST_DIR")).unwrap();
-    let log = Logger::file("log");
+    // let log = Logger::file("log");
     let mut args = std::env::args().skip(1);
     let query = args.next().expect("no query specified");
-    let mut runner = TaskParallelRunner::new(log);
+    let mut runner = DataParallelRunner::new();
     let time = std::time::Instant::now();
     match query.as_str() {
         "query1" => runner.spawn(query1),
-        "query2" => runner.spawn(query2),
+        "query2" => runner.spawn_current_thread(query2),
         "query3" => runner.spawn(query3),
         "query3-opt" => runner.spawn(query3_opt),
         "query4" => runner.spawn(query4),

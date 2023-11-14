@@ -36,7 +36,6 @@ public class CsvFileSource {
                                 .<T>forBoundedOutOfOrderness(Duration.ofSeconds(20))
                                 .withTimestampAssigner(f),
                         relativePath
-                )
-                .map(new Throughput<>("source-throughput"));
+                );
     }
 }

@@ -1,0 +1,28 @@
+[package]
+name = "rust-barebones"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rust-barebones"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.34.0", features = ["full"] }
+serde = { version = "1.0.192", features = ["derive"] }
+csv-core = "0.1.11"
+lexical-parse-float = "0.8.5"
+atoi = "2.0.0"
+fmmap = { version = "0.3.3", features = ["tokio-async"] }
+memmap2 = "0.9.0"
+csv = "1.3.0"
+rayon = "1.8.0"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "csv_benchmark"
+harness = false

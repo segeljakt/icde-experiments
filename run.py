@@ -25,20 +25,11 @@ setup = {
     "num_iterations": 5,
 }
 
-if not os.path.exists('data/'):
-    # Generate input files
-    subprocess.run([
-        "cargo", "run",
-        "--release",
-        "--manifest-path=data-generator/Cargo.toml",
-        "--",
-        "--num-events=" + str(setup['num_events']),
-        "--person-proportion=" + str(setup['person-proportion']),
-        "--auction-proportion=" + str(setup['auction-proportion']),
-        "--bid-proportion=" + str(setup['bid-proportion']),
-        "--event-type=bid",
-        "--dir=data/"
-    ], check=True)
+# TODO: Start Zookeeper
+subprocess.run(["zookeeper-server-start.sh", "config/zookeeper.properties"])
+
+# TODO: Start Kafka
+subprocess.run(["zookeeper-server-start.sh", "config/zookeeper.properties"])
 
 # Start Flink cluster
 if "TaskManager" not in \
@@ -57,6 +48,21 @@ subprocess.run(["cargo", "build",
 
 # Run experiments
 results = []
+
+if not os.path.exists('data/'):
+    # Generate input files
+    subprocess.run([
+        "cargo", "run",
+        "--release",
+        "--manifest-path=data-generator/Cargo.toml",
+        "--",
+        "--num-events=" + str(setup['num_events']),
+        "--person-proportion=" + str(setup['person-proportion']),
+        "--auction-proportion=" + str(setup['auction-proportion']),
+        "--bid-proportion=" + str(setup['bid-proportion']),
+        "--event-type=bid",
+        "--dir=data/"
+    ], check=True)
 
 for program in setup['programs']:
     for query in setup["queries"]:
