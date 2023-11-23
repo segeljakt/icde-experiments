@@ -3,6 +3,7 @@ package org.example.queries;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.example.data.Bid;
+import org.example.source.GeneratorSink;
 
 // Convert each bid value from dollars to euros
 public class Query1 {
@@ -25,5 +26,7 @@ public class Query1 {
             this.bidder = bidder;
             this.dateTime = dateTime;
         }
+
+        public Output() {}
     }
 }

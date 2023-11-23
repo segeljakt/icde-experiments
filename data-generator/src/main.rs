@@ -62,10 +62,8 @@ fn config() -> NexmarkConfig {
         first_event_number: 0,
         // Time for first event (ms since epoch).
         // Default: SystemTime::now() - SystemTime::UNIX_EPOCH
-        base_time: SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64,
+        // NOTE: Set to 1700000000 (Tue Nov 14 2023 22:13:20 GMT+0000) to make events reproducible.
+        base_time: 1700000000,
         // Auction categories.
         // Default: 5
         num_categories: 5,

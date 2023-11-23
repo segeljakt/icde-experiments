@@ -13,11 +13,14 @@ import org.example.data.Auction;
 import org.example.data.Bid;
 import org.example.data.Person;
 
+import java.util.HashMap;
+
 // Select the average of the winning bid prices for all auctions in each category.
 
 public class Query4 {
     public static DataStream<Output>
     naive(DataStream<Bid> bids, DataStream<Auction> auctions) {
+        HashMap<Long, Long> auctionToPrice = new HashMap<>();
         return auctions.join(bids).where(auction -> auction.id)
                 .equalTo(bid -> bid.auction)
                 .window(TumblingEventTimeWindows.of(Time.minutes(1)))
@@ -68,5 +71,7 @@ public class Query4 {
         public Output(long price) {
             this.price = price;
         }
+
+        public Output() {}
     }
 }

@@ -11,7 +11,24 @@ use rayon::str::ParallelString;
 use serde::Deserialize;
 use tokio::io::AsyncBufReadExt;
 
-fn _main() {
+fn main() {
+    let mut args = std::env::args().skip(1);
+    let time = std::time::Instant::now();
+
+    match args.next().as_deref() {
+        Some("basic") => basic(),
+        Some("mmap") => mmap(),
+        Some("mmap_deser") => mmap_deser(),
+        Some("mmap_rayon") => mmap_rayon(),
+        Some("mmap_tokio") => mmap_tokio(),
+        _ => panic!("Invalid argument. Expected: basic, mmap, mmap_deser, mmap_rayon, mmap_tokio"),
+    }
+
+    let duration = time.elapsed();
+    println!("Job Execution Time: {:?}", duration);
+}
+
+fn basic() {
     let time = std::time::Instant::now();
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -38,7 +55,7 @@ fn _main() {
     println!("Job Execution Time: {:?}", time.elapsed());
 }
 
-fn __main() {
+fn mmap() {
     let time = std::time::Instant::now();
     let file = File::open("../data/bids.csv").expect("Unable to open file");
     let mmap: Mmap = unsafe { MmapOptions::new().map(&file).expect("Unable to map file") };
@@ -52,7 +69,7 @@ fn __main() {
     println!("Job Execution Time: {:?}", time.elapsed());
 }
 
-fn main() {
+fn mmap_deser() {
     let time = std::time::Instant::now();
     let file = File::open("../data/bids.csv").expect("Unable to open file");
     let mmap: Mmap = unsafe { MmapOptions::new().map(&file).expect("Unable to map file") };
@@ -67,7 +84,7 @@ fn main() {
     println!("Job Execution Time: {:?}", time.elapsed());
 }
 
-fn ___main() {
+fn mmap_rayon() {
     let time = std::time::Instant::now();
     let file = File::open("../data/bids.csv").expect("Unable to open file");
     let mmap: Mmap = unsafe { MmapOptions::new().map(&file).expect("Unable to map file") };
@@ -83,7 +100,7 @@ fn ___main() {
     println!("Job Execution Time: {:?}", time.elapsed());
 }
 
-fn ____main() {
+fn mmap_tokio() {
     let time = std::time::Instant::now();
     tokio::runtime::Builder::new_current_thread()
         .enable_all()

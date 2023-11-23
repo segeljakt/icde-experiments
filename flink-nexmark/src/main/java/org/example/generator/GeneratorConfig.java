@@ -18,13 +18,18 @@ package org.example.generator;
  * limitations under the License.
  */
 
+import org.example.NexmarkConfiguration;
+import org.example.data.Event;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-/** Parameters controlling how {@link NexmarkGenerator} synthesizes {@link Event} elements. */
+/**
+ * Parameters controlling how {@link NexmarkGenerator} synthesizes {@link Event} elements.
+ */
 public class GeneratorConfig implements Serializable {
 
     /**
@@ -36,13 +41,26 @@ public class GeneratorConfig implements Serializable {
     public static final long FIRST_PERSON_ID = 1000L;
     public static final long FIRST_CATEGORY_ID = 10L;
 
-    /** Proportions of people/auctions/bids to synthesize. */
+    /**
+     * Proportions of people/auctions/bids to synthesize.
+     */
     public final int personProportion;
     public final int auctionProportion;
     public final int bidProportion;
     public final int totalProportion;
 
-    /** Environment options. */
+    public EventFilter eventFilter;
+
+    public enum EventFilter implements Serializable {
+        AUCTION,
+        PERSON,
+        BID,
+        ALL
+    }
+
+    /**
+     * Environment options.
+     */
     private final NexmarkConfiguration configuration;
 
     /**
@@ -51,10 +69,14 @@ public class GeneratorConfig implements Serializable {
      */
     private final double[] interEventDelayUs;
 
-    /** Delay before changing the current inter-event delay. */
+    /**
+     * Delay before changing the current inter-event delay.
+     */
     private final long stepLengthSec;
 
-    /** Time for first event (ms since epoch). */
+    /**
+     * Time for first event (ms since epoch).
+     */
     public final long baseTime;
 
     /**
@@ -63,8 +85,10 @@ public class GeneratorConfig implements Serializable {
      */
     public final long firstEventId;
 
-    /** Maximum number of events to generate. */
-    public final long maxEvents;
+    /**
+     * Maximum number of events to generate.
+     */
+    public long maxEvents;
 
     /**
      * First event number. Generators running in parallel time may share the same event number, and
@@ -96,21 +120,17 @@ public class GeneratorConfig implements Serializable {
         this.bidProportion = configuration.bidProportion;
         this.totalProportion = this.auctionProportion + this.personProportion + this.bidProportion;
 
+        this.eventFilter = EventFilter.ALL;
         this.configuration = configuration;
 
         this.interEventDelayUs = new double[1];
-        this.interEventDelayUs[0] = 1000000.0  / configuration.firstEventRate  * configuration.numEventGenerators;
+        this.interEventDelayUs[0] = 1_000_000.0 / configuration.firstEventRate * configuration.numEventGenerators;
         this.stepLengthSec = configuration.rateShape.stepLengthSec(configuration.ratePeriodSec);
         this.baseTime = baseTime;
         this.firstEventId = firstEventId;
         if (maxEventsOrZero == 0) {
             // Scale maximum down to avoid overflow in getEstimatedSizeBytes.
-            this.maxEvents =
-                    Long.MAX_VALUE
-                            / (totalProportion
-                            * Math.max(
-                            Math.max(configuration.avgPersonByteSize, configuration.avgAuctionByteSize),
-                            configuration.avgBidByteSize));
+            this.maxEvents = Long.MAX_VALUE / (totalProportion * Math.max(Math.max(configuration.avgPersonByteSize, configuration.avgAuctionByteSize), configuration.avgBidByteSize));
         } else {
             this.maxEvents = maxEventsOrZero;
         }
@@ -122,11 +142,12 @@ public class GeneratorConfig implements Serializable {
         this.epochPeriodMs = epochPeriodMs;
     }
 
-    /** Return a copy of this config. */
+    /**
+     * Return a copy of this config.
+     */
     public GeneratorConfig copy() {
         GeneratorConfig result;
-        result =
-                new GeneratorConfig(configuration, baseTime, firstEventId, maxEvents, firstEventNumber);
+        result = new GeneratorConfig(configuration, baseTime, firstEventId, maxEvents, firstEventNumber);
         return result;
     }
 
@@ -155,13 +176,17 @@ public class GeneratorConfig implements Serializable {
         return results;
     }
 
-    /** Return copy of this config except with given parameters. */
+    /**
+     * Return copy of this config except with given parameters.
+     */
     public GeneratorConfig copyWith(long firstEventId, long maxEvents, long firstEventNumber) {
         return new GeneratorConfig(
                 configuration, baseTime, firstEventId, maxEvents, firstEventNumber);
     }
 
-    /** Return an estimate of the bytes needed by {@code numEvents}. */
+    /**
+     * Return an estimate of the bytes needed by {@code numEvents}.
+     */
     public long estimatedBytesForEvents(long numEvents) {
         long numPersons =
                 (numEvents * personProportion) / totalProportion;
@@ -212,7 +237,9 @@ public class GeneratorConfig implements Serializable {
         return configuration.occasionalDelaySec;
     }
 
-    /** Return an estimate of the byte-size of all events a generator for this config would yield. */
+    /**
+     * Return an estimate of the byte-size of all events a generator for this config would yield.
+     */
     public long getEstimatedSizeBytes() {
         return estimatedBytesForEvents(maxEvents);
     }
@@ -225,12 +252,16 @@ public class GeneratorConfig implements Serializable {
         return firstEventId + firstEventNumber;
     }
 
-    /** Return one past the last 'event id' which could be generated from this config. */
+    /**
+     * Return one past the last 'event id' which could be generated from this config.
+     */
     public long getStopEventId() {
         return firstEventId + firstEventNumber + maxEvents;
     }
 
-    /** Return the next event number for a generator which has so far emitted {@code numEvents}. */
+    /**
+     * Return the next event number for a generator which has so far emitted {@code numEvents}.
+     */
     public long nextEventNumber(long numEvents) {
         return firstEventNumber + numEvents;
     }
@@ -243,7 +274,7 @@ public class GeneratorConfig implements Serializable {
         long n = configuration.outOfOrderGroupSize;
         long eventNumber = nextEventNumber(numEvents);
         long base = (eventNumber / n) * n;
-        long offset = (eventNumber * 953) % n;
+        long offset = (eventNumber * 953) % n; // Magic number to introduce some jitter
         return base + offset;
     }
 
@@ -261,7 +292,7 @@ public class GeneratorConfig implements Serializable {
      * What timestamp should the event with {@code eventNumber} have for this generator?
      */
     public long timestampForEvent(long eventNumber) {
-        return baseTime + (long)(eventNumber * interEventDelayUs[0]) / 1000L;
+        return baseTime + (long) (eventNumber * interEventDelayUs[0]) / 1000L;
     }
 
     @Override

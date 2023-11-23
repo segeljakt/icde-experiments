@@ -27,5 +27,7 @@ public class Query2 {
             this.auction = auction;
             this.bidder = bidder;
         }
+
+        public Output() {}
     }
 }

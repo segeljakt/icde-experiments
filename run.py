@@ -1,54 +1,36 @@
 import subprocess
 import numpy as np
+# import matplotlib.pyplot as plt
 import os
-import matplotlib.pyplot as plt
-import re
 
 setup = {
     "programs": [
         {
-            "name": "flink",
-            "cmd": ["flink", "run",
-                    "flink-nexmark/target/flink-nexmark-1.0-SNAPSHOT.jar"],
-
-        },
-        {
             "name": "rust",
             "cmd": ["./rust-nexmark/target/release/rust-nexmark"],
         },
+        {
+            "name": "flink",
+            "cmd": ["flink", "run",
+                    "flink-nexmark/target/flink-nexmark-1.0-SNAPSHOT.jar"],
+        },
     ],
-    "queries": ["query1", "query2"],  # , "query3", "query3-opt"],
-    "num_events": 10_000_000,
-    "person-proportion": 1,
-    "auction-proportion": 3,
-    "bid-proportion": 46,
-    "num_iterations": 5,
+    "query_groups": [("query3", "query3-opt")],
+    "num_events": [1_000_000],
+    "num_iterations": 1,
+    "dir": "data/"
 }
 
-# TODO: Start Zookeeper
-subprocess.run(["zookeeper-server-start.sh", "config/zookeeper.properties"])
-
-# TODO: Start Kafka
-subprocess.run(["zookeeper-server-start.sh", "config/zookeeper.properties"])
-
-# Start Flink cluster
-if "TaskManager" not in \
-        subprocess.run(["jps"], capture_output=True).stdout.decode('utf-8'):
-    subprocess.run(["start-cluster.sh"], check=True)
-
-# Build Java project
-subprocess.run(["mvn", "clean", "package",
-                "-f", "flink-nexmark/pom.xml"])
+# Start Flink cluster if not running
+p = subprocess.run(["jps"], capture_output=True)
+if "TaskManager" not in p.stdout.decode('utf-8'):
+    subprocess.run(["start-cluster.sh", "-c", "flink-conf.yaml"], check=True)
 
 # Build Rust project
-subprocess.run(["cargo", "build",
-                "--release",
-                "--manifest-path=rust-nexmark/Cargo.toml",
-                ], check=True)
+subprocess.run(["cargo", "build", "--release",
+               "--manifest-path=rust-nexmark/Cargo.toml"])
 
-# Run experiments
-results = []
-
+# Generate data
 if not os.path.exists('data/'):
     # Generate input files
     subprocess.run([
@@ -56,67 +38,68 @@ if not os.path.exists('data/'):
         "--release",
         "--manifest-path=data-generator/Cargo.toml",
         "--",
-        "--num-events=" + str(setup['num_events']),
-        "--person-proportion=" + str(setup['person-proportion']),
-        "--auction-proportion=" + str(setup['auction-proportion']),
-        "--bid-proportion=" + str(setup['bid-proportion']),
-        "--event-type=bid",
-        "--dir=data/"
+        "--num-events=" + str(max(setup['num_events'])),
+        "--dir=" + setup['dir']
     ], check=True)
 
-for program in setup['programs']:
-    for query in setup["queries"]:
-        execution_times = []
-        for i in range(setup['num_iterations']):
-            print("Running", program['name'], query,
-                  i + 1, "/", setup['num_iterations'])
-            cmd = program['cmd'] + [query]
-            output = subprocess.run(cmd,
-                                    capture_output=True,
-                                    text=True,
-                                    check=True).stdout
-            millis = int(re.search(r"Job Runtime: (\d+) ms", output).group(1))
-            seconds = millis / 1000
-            print("Execution time:", seconds, "sec")
-            execution_times.append(seconds)
-        results.append((program['name'], query, execution_times))
+# Build Java project
+subprocess.run(["mvn", "clean", "package", "-f", "flink-nexmark/pom.xml"])
 
-means = [np.mean(times) for _, _, times in results]
-stds = [np.std(times) for _, _, times in results]
+# Run experiments
+results = {}
+plot_data = {}
 
-# Number of groups (queries) and width of each bar
-n_groups = len(setup['queries'])
-bar_width = 0.35
+for query_group in setup["query_groups"]:
+    for query in query_group:
+        for (i, program) in enumerate(setup['programs']):
+            execution_times = []
+            for num_events in setup['num_events']:
+                for i in range(setup['num_iterations']):
+                    print(f'{program["name"]}, {query}, {num_events}: '
+                          f'{i+1}/{setup["num_iterations"]}')
+                    output = subprocess.run(
+                        program['cmd'] +
+                        [query, str(num_events), setup['dir']],
+                        capture_output=True,
+                        text=True,
+                        check=True).stderr
+                    seconds = int(output) / 1000
+                    print("Execution time:", seconds, "sec")
+                    execution_times.append(seconds)
+            mean = np.mean(execution_times)
+            std_dev = np.std(execution_times)
 
-# Setting up the x positions for the bars
-index = np.arange(n_groups) * len(setup['programs']) * bar_width
-fig, ax = plt.subplots(figsize=(15, 6))
+print(results)
 
-for i, (program, _, _) in enumerate(results):
-    ax.bar(index[i % n_groups] + (i // n_groups) * bar_width,
-           means[i], bar_width,
-           yerr=stds[i],
-           label=program,
-           capsize=5, alpha=0.7)
-
-# Labeling and aesthetics
-ax.set_xlabel('Query')
-ax.set_ylabel('Average Execution Time (sec)')
-ax.set_xticks(index + bar_width * (len(setup['programs']) / 2 - 0.5))
-ax.set_xticklabels(setup['queries'])
-ax.legend()
-ax.grid(axis='y')
-
-total_proportion = setup['person-proportion'] \
-    + setup['auction-proportion'] \
-    + setup['bid-proportion']
-
-ax.set_title('Average Execution Time of Nexmark Queries for Flink and Rust for'
-             '{0}M events ({1}% Person, {2}% Auction, {3}% Bid)'.format(
-                 setup['num_events'] // 1_000_000,
-                 setup['person-proportion'] / total_proportion * 100,
-                 setup['auction-proportion'] / total_proportion * 100,
-                 setup['bid-proportion'] / total_proportion * 100))
-
-plt.tight_layout()
-plt.savefig('nexmark-results.pdf')
+# # Plotting
+# for query_group, group_results in results.items():
+#     fig, ax = plt.subplots(figsize=(15, 6))
+#     bar_width = 0.35 / len(setup['programs'])
+#     num_programs = len(setup['programs'])
+#     index = np.arange(len(setup['num_events']))
+#
+#     for query in query_group:
+#         for program, i, num_events, mean_time, std_dev in group_results[query]:
+#             bar_pos = index + (bar_width * i) if num_programs > 1 else index
+#             ax.bar(bar_pos,
+#                    mean_time,
+#                    bar_width,
+#                    yerr=std_dev,
+#                    label=f'{program} ({query}, {num_events} events)',
+#                    capsize=5,
+#                    alpha=0.7)
+#
+#     # Labeling and aesthetics
+#     ax.set_title('Job Execution Time of Nexmark '
+#                  f'{query_group[0]} vs {query_group[1]} '
+#                  f'(2% Person, 6% Auction, 92% Bid)'.format())
+#
+#     ax.set_xlabel('Number of Events')
+#     ax.set_ylabel('Average Execution Time (sec)')
+#     ax.set_xticks(index + bar_width / 2)
+#     ax.set_xticklabels([f"{n//1_000_000}M" for n in setup['num_events']])
+#     ax.legend()
+#     ax.grid(axis='y')
+#
+#     plt.tight_layout()
+#     plt.savefig(f'nexmark-results-{query_group[0]}.pdf')
