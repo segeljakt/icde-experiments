@@ -1,8 +1,8 @@
-package org.example.source;
+package org.example.io;
 
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 
-public class GeneratorSink<T> extends RichSinkFunction<T> {
+public class DataSink<T> extends RichSinkFunction<T> {
 
         /**
         * Flag to make the source cancelable.
@@ -11,7 +11,7 @@ public class GeneratorSink<T> extends RichSinkFunction<T> {
 
         private volatile long n = 0;
 
-        public GeneratorSink() {
+        public DataSink() {
         }
 
         @Override

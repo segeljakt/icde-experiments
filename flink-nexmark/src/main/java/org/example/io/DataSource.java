@@ -1,43 +1,32 @@
-package org.example.source;
+package org.example.io;
 
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.MappingIterator;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.Serializable;
+import java.util.Iterator;
 
-public class CsvByteArraySource<T> extends RichSourceFunction<T> {
+public class DataSource<T> extends RichSourceFunction<T> {
 
     private volatile boolean isRunning = true;
-    private final byte[] csvData;
-    private final Class<T> targetType;
     private final TimestampExtractor<T> timestampExtractor;
     private final long frequency;
-    private long watermark = 0;
-    private long latestTimestamp = 0;
-    private long i = 0;
     private final long slack;
+    private final IteratorInit<T> uninitializedIterator;
 
-    public CsvByteArraySource(byte[] csvData, Class<T> targetType, TimestampExtractor<T> timestampExtractor, long slack, long frequency) {
-        this.csvData = csvData;
-        this.targetType = targetType;
+    public DataSource(IteratorInit<T> uninitializedIterator, TimestampExtractor<T> timestampExtractor, long slack, long frequency) {
         this.timestampExtractor = timestampExtractor;
         this.frequency = frequency;
         this.slack = slack;
+        this.uninitializedIterator = uninitializedIterator;
     }
 
     @Override
     public void run(SourceContext<T> ctx) throws Exception {
-        CsvMapper mapper = new CsvMapper();
-        CsvSchema schema = mapper.schemaFor(targetType).withHeader();
-        Reader reader = new InputStreamReader(new ByteArrayInputStream(csvData));
-        MappingIterator<T> iter = mapper.readerFor(targetType).with(schema).readValues(reader);
-
+        Iterator<T> iter = uninitializedIterator.init();
+        long watermark = 0;
+        long latestTimestamp = 0;
+        long i = 0;
         while (isRunning && iter.hasNext()) {
             T event = iter.next();
             long timestamp = timestampExtractor.extractTimestamp(event);
@@ -70,5 +59,9 @@ public class CsvByteArraySource<T> extends RichSourceFunction<T> {
     @FunctionalInterface
     public interface TimestampExtractor<T> extends Serializable {
         long extractTimestamp(T data);
+    }
+
+    public interface IteratorInit<T> extends Serializable {
+        Iterator<T> init();
     }
 }

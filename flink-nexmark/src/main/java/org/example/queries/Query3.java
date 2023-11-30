@@ -2,18 +2,19 @@ package org.example.queries;
 
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.example.data.Auction;
-import org.example.data.Bid;
 import org.example.data.Person;
+import org.example.operators.FilterMap;
+
+import java.util.Optional;
 
 // Who is selling in OR, ID or CA in category 10, and for what auction ids?
 public class Query3 {
-    public static DataStream<Output> naive(DataStream<Person> persons, DataStream<Auction> auctions) {
+    public static DataStream<Output> q3(DataStream<Person> persons, DataStream<Auction> auctions) {
         return auctions.join(persons)
                 .where(auction -> auction.seller)
                 .equalTo(person -> person.id)
@@ -30,63 +31,66 @@ public class Query3 {
     }
 
     // Optimisations:
-    // - Filter auctions by category before joining
-    // - Filter people by state before joining
-    // - Fuse map with apply
-    public static DataStream<Output> optimised(DataStream<Person> persons, DataStream<Auction> auctions) {
-        DataStream<Person> filtered = persons
-                .filter(auction -> auction.state.equals("OR") || auction.state.equals("ID") || auction.state.equals("CA"));
-        return auctions
-                .filter(a -> a.category == 10)
-                .join(filtered)
-                .where(auction -> auction.seller)
-                .equalTo(person -> person.id)
+    // - Data pruning
+    // - Predicate pushdown
+    // - Fuse filter and map
+    public static DataStream<Output> q3Opt(DataStream<Person> persons, DataStream<Auction> auctions) {
+        DataStream<PrunedPerson> persons2 = persons
+                .process(new FilterMap<Person, PrunedPerson>(p -> {
+                    if (p.state.equals("OR") || p.state.equals("ID") || p.state.equals("CA")) {
+                        return Optional.of(new PrunedPerson(p.id, p.name, p.city, p.state));
+                    } else {
+                        return Optional.empty();
+                    }
+                }))
+                .returns(PrunedPerson.class);
+        DataStream<PrunedAuction> auctions2 = auctions
+                .process(new FilterMap<Auction, PrunedAuction>(a -> {
+                    if (a.category == 10) {
+                        return Optional.of(new PrunedAuction(a.seller, a.id));
+                    } else {
+                        return Optional.empty();
+                    }
+                }))
+                .returns(PrunedAuction.class);
+        return auctions2
+                .map(a -> new PrunedAuction(a.seller, a.id))
+                .join(persons2)
+                .where(a -> a.seller)
+                .equalTo(p -> p.id)
                 .window(TumblingEventTimeWindows.of(Time.seconds(10)))
                 .allowedLateness(Time.milliseconds(0))
-                .apply((auction, person) -> new Output(person.name, person.city, person.state, auction.id));
+                .apply((a, p) -> new Output(p.name, p.city, p.state, a.id));
     }
 
-    public static DataStream<Output> optimised2(DataStream<Person> persons, DataStream<Auction> auctions) {
-        DataStream<PartialPerson> filtered = persons
-                .filter(auction -> auction.state.equals("OR") || auction.state.equals("ID") || auction.state.equals("CA"))
-                .map(person -> new PartialPerson(person.id, person.name, person.city, person.state));
-        return auctions
-                .filter(a -> a.category == 10)
-                .map(auction -> new PartialAuction(auction.seller, auction.id))
-                .join(filtered)
-                .where(auction -> auction.seller)
-                .equalTo(person -> person.id)
-                .window(TumblingEventTimeWindows.of(Time.seconds(10)))
-                .allowedLateness(Time.milliseconds(0))
-                .apply((auction, person) -> new Output(person.name, person.city, person.state, auction.id));
-    }
-
-    public static class PartialPerson {
+    public static class PrunedPerson {
         public long id;
         public String name;
         public String city;
         public String state;
 
-        public PartialPerson(long id, String name, String city, String state) {
+        public PrunedPerson(long id, String name, String city, String state) {
             this.id = id;
             this.name = name;
             this.city = city;
             this.state = state;
         }
 
-        public PartialPerson() {}
+        public PrunedPerson() {
+        }
     }
 
-    public static class PartialAuction {
+    public static class PrunedAuction {
         public long seller;
         public long id;
 
-        public PartialAuction(long seller, long id) {
+        public PrunedAuction(long seller, long id) {
             this.seller = seller;
             this.id = id;
         }
 
-        public PartialAuction() {}
+        public PrunedAuction() {
+        }
     }
 
     @JsonPropertyOrder({"name", "city", "state", "id"})
@@ -103,6 +107,7 @@ public class Query3 {
             this.id = id;
         }
 
-        public Output() {}
+        public Output() {
+        }
     }
 }
