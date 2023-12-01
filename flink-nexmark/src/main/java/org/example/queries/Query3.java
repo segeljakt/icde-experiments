@@ -25,7 +25,10 @@ public class Query3 {
                         return new Tuple2<Auction, Person>(auction, person);
                     }
                 })
-                .filter(tuple -> (tuple.f1.state.equals("OR") || tuple.f1.state.equals("ID") || tuple.f1.state.equals("CA")) && tuple.f0.category == 10)
+                .filter(tuple -> {
+                    System.out.println("Filtering tuple: " + tuple.f1.state);
+                    return (tuple.f1.state.equals("OR") || tuple.f1.state.equals("ID") || tuple.f1.state.equals("CA")) && tuple.f0.category == 10;
+                })
                 .map(tuple -> new Output(tuple.f1.name, tuple.f1.city, tuple.f1.state, tuple.f0.id))
                 .returns(Output.class);
     }
@@ -37,7 +40,7 @@ public class Query3 {
     public static DataStream<Output> q3Opt(DataStream<Person> persons, DataStream<Auction> auctions) {
         DataStream<PrunedPerson> persons2 = persons
                 .process(new FilterMap<Person, PrunedPerson>(p -> {
-                    if (p.state.equals("OR") || p.state.equals("ID") || p.state.equals("CA")) {
+                    if (p.state.equals("or") || p.state.equals("id") || p.state.equals("ca")) {
                         return Optional.of(new PrunedPerson(p.id, p.name, p.city, p.state));
                     } else {
                         return Optional.empty();
@@ -54,12 +57,10 @@ public class Query3 {
                 }))
                 .returns(PrunedAuction.class);
         return auctions2
-                .map(a -> new PrunedAuction(a.seller, a.id))
                 .join(persons2)
                 .where(a -> a.seller)
                 .equalTo(p -> p.id)
                 .window(TumblingEventTimeWindows.of(Time.seconds(10)))
-                .allowedLateness(Time.milliseconds(0))
                 .apply((a, p) -> new Output(p.name, p.city, p.state, a.id));
     }
 

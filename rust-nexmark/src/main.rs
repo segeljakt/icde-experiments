@@ -1,25 +1,24 @@
 use runtime::prelude::*;
 
 use runtime::prelude::formats::csv;
-use runtime::prelude::Data;
 
 #[data]
 struct Auction {
-    id: usize,
+    id: u64,
     item_name: String,
     description: String,
-    initial_bid: usize,
-    reserve: usize,
+    initial_bid: u64,
+    reserve: u64,
     date_time: u64,
     expires: u64,
-    seller: usize,
-    category: usize,
+    seller: u64,
+    category: u64,
     extra: String,
 }
 
 #[data]
 struct Person {
-    id: usize,
+    id: u64,
     name: String,
     email_address: String,
     credit_card: String,
@@ -30,17 +29,36 @@ struct Person {
 }
 
 #[data]
+struct Bid {
+    auction: u64,
+    bidder: u64,
+    price: u64,
+    channel: String,
+    url: String,
+    date_time: u64,
+    extra: String,
+}
+
+#[data]
 struct PrunedAuction {
-    id: usize,
-    seller: usize,
+    id: u64,
+    seller: u64,
 }
 
 #[data]
 struct PrunedPerson {
-    id: usize,
+    id: u64,
     name: String,
     city: String,
     state: String,
+}
+
+#[data]
+struct Query1 {
+    auction: u64,
+    price: u64,
+    bidder: u64,
+    date_time: u64,
 }
 
 #[data]
@@ -48,7 +66,17 @@ struct Query3 {
     name: String,
     city: String,
     state: String,
-    id: usize,
+    id: u64,
+}
+
+fn query1(bids: Stream<Bid>, ctx: &mut Context) {
+    bids.map(ctx, |bid| Query1 {
+        auction: bid.auction,
+        price: bid.price * 100 / 85,
+        bidder: bid.bidder,
+        date_time: bid.date_time,
+    })
+    .drain(ctx);
 }
 
 fn q3(auctions: Stream<Auction>, persons: Stream<Person>, ctx: &mut Context) {
@@ -62,9 +90,7 @@ fn q3(auctions: Stream<Auction>, persons: Stream<Person>, ctx: &mut Context) {
             |auction, person| (auction, person),
         )
         .filter(ctx, |(auction, person)| {
-            (person.state == String::from("OR")
-                || person.state == String::from("ID")
-                || person.state == String::from("CA"))
+            (person.state == "OR" || person.state == "ID" || person.state == "CA")
                 && auction.category == 10
         })
         .map(ctx, |(auction, person)| Query3 {
@@ -78,10 +104,7 @@ fn q3(auctions: Stream<Auction>, persons: Stream<Person>, ctx: &mut Context) {
 
 fn q3_opt(auctions: Stream<Auction>, persons: Stream<Person>, ctx: &mut Context) {
     let persons2 = persons.filter_map(ctx, |p| {
-        if p.state == String::from("OR")
-            || p.state == String::from("ID")
-            || p.state == String::from("CA")
-        {
+        if p.state == "or" || p.state == "id" || p.state == "ca" {
             Option::some(PrunedPerson {
                 id: p.id,
                 name: p.name,
@@ -119,16 +142,18 @@ fn q3_opt(auctions: Stream<Auction>, persons: Stream<Person>, ctx: &mut Context)
         .drain(ctx);
 }
 
-pub fn mmap_csv_source<T: Data>(ctx: &mut Context, path: &str, f: fn(T) -> Time) -> Stream<T> {
+pub fn iter<T: Data>(path: &str) -> impl Iterator<Item = T> {
     let file = std::fs::File::open(path).expect("Unable to open file");
     let mmap = unsafe {
         memmap2::MmapOptions::new()
             .map(&file)
             .expect("Unable to map file")
     };
+    mmap.advise(memmap2::Advice::Sequential).unwrap();
+    mmap.lock().unwrap();
     let mut reader = csv::de::Reader::<1024>::new(',');
     let mut i = 0;
-    let iter = std::iter::from_fn(move || {
+    std::iter::from_fn(move || {
         if i >= mmap.len() {
             return None;
         }
@@ -136,7 +161,14 @@ pub fn mmap_csv_source<T: Data>(ctx: &mut Context, path: &str, f: fn(T) -> Time)
         let bid = T::deserialize(&mut deserializer).unwrap();
         i += deserializer.nread;
         Some(bid)
-    });
+    })
+}
+
+pub fn stream<T: Data>(
+    ctx: &mut Context,
+    iter: impl Iterator<Item = T> + Send + 'static,
+    f: impl Fn(&T) -> Time + Send + 'static,
+) -> Stream<T> {
     Stream::from_iter(ctx, iter, f, 1000, Duration::from_milliseconds(100))
 }
 
@@ -145,22 +177,71 @@ fn main() {
     let dir = args.next().expect("No `dir` specified");
     let query = args.next().expect("No `query` specified");
 
-    let auctions = |ctx: &mut Context| {
-        mmap_csv_source::<Auction>(ctx, &format!("{dir}/auctions.csv"), |a| {
-            Time::from_milliseconds(a.date_time as i128)
-        })
-    };
-    let persons = |ctx: &mut Context| {
-        mmap_csv_source::<Person>(ctx, &format!("{dir}/persons.csv"), |p| {
-            Time::from_milliseconds(p.date_time as i128)
-        })
-    };
-
-    let time = std::time::Instant::now();
-    CurrentThreadRunner::run(move |ctx| match query.as_str() {
-        "q3" => q3(auctions(ctx), persons(ctx), ctx),
-        "q3-opt" => q3_opt(auctions(ctx), persons(ctx), ctx),
+    match query.as_str() {
+        "q1" => {
+            let bids_iter = iter::<Bid>(&format!("{dir}/bids.csv"));
+            let time = std::time::Instant::now();
+            CurrentThreadRunner::run(move |ctx| {
+                let bids = stream(ctx, bids_iter, |b| Time::from_millis(b.date_time as i128));
+                query1(bids, ctx)
+            });
+            eprintln!("{}", time.elapsed().as_millis());
+        }
+        "q1-io" => {
+            let bids_iter = iter::<Bid>(&format!("{dir}/bids.csv"));
+            let time = std::time::Instant::now();
+            CurrentThreadRunner::run(move |ctx| {
+                let bids = stream(ctx, bids_iter, |b| Time::from_millis(b.date_time as i128));
+                bids.drain(ctx);
+            });
+            eprintln!("{}", time.elapsed().as_millis());
+        }
+        "q3" => {
+            let auctions_iter = iter::<Auction>(&format!("{dir}/auctions.csv"));
+            let persons_iter = iter::<Person>(&format!("{dir}/persons.csv"));
+            let time = std::time::Instant::now();
+            CurrentThreadRunner::run(move |ctx| {
+                let persons = stream(ctx, persons_iter, |p| {
+                    Time::from_millis(p.date_time as i128)
+                });
+                let auctions = stream(ctx, auctions_iter, |a| {
+                    Time::from_millis(a.date_time as i128)
+                });
+                q3(auctions, persons, ctx)
+            });
+            eprintln!("{}", time.elapsed().as_millis());
+        }
+        "q3-opt" => {
+            let auctions_iter = iter::<Auction>(&format!("{dir}/auctions.csv"));
+            let persons_iter = iter::<Person>(&format!("{dir}/persons.csv"));
+            let time = std::time::Instant::now();
+            CurrentThreadRunner::run(move |ctx| {
+                let persons = stream(ctx, persons_iter, |p| {
+                    Time::from_millis(p.date_time as i128)
+                });
+                let auctions = stream(ctx, auctions_iter, |a| {
+                    Time::from_millis(a.date_time as i128)
+                });
+                q3_opt(auctions, persons, ctx)
+            });
+            eprintln!("{}", time.elapsed().as_millis());
+        }
+        "q3-io" => {
+            let auctions_iter = iter::<Auction>(&format!("{dir}/auctions.csv"));
+            let persons_iter = iter::<Person>(&format!("{dir}/persons.csv"));
+            let time = std::time::Instant::now();
+            CurrentThreadRunner::run(move |ctx| {
+                let persons = stream(ctx, persons_iter, |p| {
+                    Time::from_millis(p.date_time as i128)
+                });
+                let auctions = stream(ctx, auctions_iter, |a| {
+                    Time::from_millis(a.date_time as i128)
+                });
+                persons.drain(ctx);
+                auctions.drain(ctx);
+            });
+            eprintln!("{}", time.elapsed().as_millis());
+        }
         _ => panic!("unknown query"),
-    });
-    eprintln!("{}", time.elapsed().as_millis());
+    }
 }
