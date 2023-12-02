@@ -6,11 +6,14 @@ import matplotlib.pyplot as plt
 flink = ["flink", "run", "flink-nexmark/target/flink-nexmark-1.0-SNAPSHOT.jar"]
 rust = ["./rust-nexmark/target/release/rust-nexmark"]
 
-num_iterations = 3
-num_warmups = 2
+num_iterations = 10
+num_warmups = 5
 num_events = 1_000_000
 q1_data = f"q1-data-{num_events}/"
 q3_data = f"q3-data-{num_events}/"
+
+if not os.path.exists("output"):
+    os.mkdir("output")
 
 # Start Flink cluster if not running
 p = subprocess.run(["jps"], capture_output=True)
@@ -113,7 +116,8 @@ ax.set_xticklabels([labels[2], labels[3]])
 ax.legend()
 
 plt.tight_layout()
-plt.savefig(f'q1-{num_events}-{num_iterations}.pdf', bbox_inches='tight')
+plt.savefig(
+    f'output/q1-{num_events}-{num_iterations}.pdf', bbox_inches='tight')
 
 # Experiment 2 ----------------------------------------------------------------
 
@@ -164,4 +168,5 @@ ax.set_xticklabels([labels[2], labels[3], labels[4], labels[5]])
 ax.legend()
 
 plt.tight_layout()
-plt.savefig(f'q3-{num_events}-{num_iterations}.pdf', bbox_inches='tight')
+plt.savefig(
+    f'output/q3-{num_events}-{num_iterations}.pdf', bbox_inches='tight')
