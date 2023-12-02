@@ -38,7 +38,7 @@ if not os.path.exists(q1_data):
         "--bid-proportion=100",
         "--auction-proportion=0",
         "--person-proportion=0",
-        "--num-events=" + str(num_events),
+        "--f-events=" + str(num_events),
         "--dir=" + q1_data
     ], check=True)
 
@@ -53,7 +53,7 @@ if not os.path.exists(q3_data):
         "--bid-proportion=0",
         "--auction-proportion=75",
         "--person-proportion=25",
-        "--num-events=" + str(num_events),
+        "--f-events=" + str(num_events),
         "--dir=" + q3_data
     ], check=True)
 
@@ -84,6 +84,10 @@ def measure(name, program, query, data):
     labels.append(f"{name} {query}")
 
 
+def formatter(lab):
+    return '        {:.2f}'.format(lab)
+
+
 # Experiment 1 ----------------------------------------------------------------
 
 labels = []
@@ -100,16 +104,20 @@ width = 0.35  # Width of the bars
 
 fig, ax = plt.subplots()
 
+
+def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+
+
 # Plotting the first pair (flink q1-io and flink q1)
-ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
-       color='none', edgecolor='black', linewidth=0.5)
-ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7)
+f(ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
+         color='none', edgecolor='black', linewidth=0.5))
+f(ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7))
 ax.text(x[0], means[0]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (rust q1-io and rust q1)
-ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
-       color='none', edgecolor='black', linewidth=0.5)
-ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7)
+f(ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
+         color='none', edgecolor='black', linewidth=0.5))
+f(ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7))
 ax.text(x[1], means[1]/2, "IO", ha='center', va='center', fontsize=11)
 
 ax.set_ylabel('Execution Time (seconds)')
@@ -140,28 +148,32 @@ width = 0.35  # Width of the bars
 
 fig, ax = plt.subplots()
 
+
+def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+
+
 # Plotting the first pair (flink q1)
-ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
-       color='none', edgecolor='black', linewidth=0.5)
-ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7)
+f(ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
+         color='none', edgecolor='black', linewidth=0.5))
+f(ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7))
 ax.text(x[0], means[0]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (rust q1)
-ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
-       color='none', edgecolor='black', linewidth=0.5)
-ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7)
+f(ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
+         color='none', edgecolor='black', linewidth=0.5))
+f(ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7))
 ax.text(x[1], means[1]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (flink q1-opt)
-ax.bar(x[2], means[0], width, yerr=std_devs[0], hatch='/',
-       color='none', edgecolor='black', linewidth=0.5)
-ax.bar(x[2], means[4], width, yerr=std_devs[4], label=labels[4], alpha=0.7)
+f(ax.bar(x[2], means[0], width, yerr=std_devs[0], hatch='/',
+         color='none', edgecolor='black', linewidth=0.5))
+f(ax.bar(x[2], means[4], width, yerr=std_devs[4], label=labels[4], alpha=0.7))
 ax.text(x[2], means[0]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (rust q1-opt)
-ax.bar(x[3], means[1], width, yerr=std_devs[1], hatch='/',
-       color='none', edgecolor='black', linewidth=0.5)
-ax.bar(x[3], means[5], width, yerr=std_devs[5], label=labels[5], alpha=0.7)
+f(ax.bar(x[3], means[1], width, yerr=std_devs[1], hatch='/',
+         color='none', edgecolor='black', linewidth=0.5))
+f(ax.bar(x[3], means[5], width, yerr=std_devs[5], label=labels[5], alpha=0.7))
 ax.text(x[3], means[1]/2, "IO", ha='center', va='center', fontsize=11)
 
 ax.set_ylabel('Execution Time (seconds)')
