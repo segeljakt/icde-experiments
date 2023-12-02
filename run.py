@@ -18,11 +18,14 @@ if not os.path.exists("output"):
 # Start Flink cluster if not running
 p = subprocess.run(["jps"], capture_output=True)
 if "TaskManager" not in p.stdout.decode('utf-8'):
-    subprocess.run(["start-cluster.sh", "-c", "flink-conf.yaml"], check=True)
+    print("Starting Flink Cluster")
+    subprocess.run(["start-cluster.sh"], check=True)
+else:
+    print("Flink Cluster already online")
 
 # Build Rust project
 subprocess.run(["cargo", "build", "--release",
-               "--manifest-path=rust-nexmark/Cargo.toml"])
+                "--manifest-path=rust-nexmark/Cargo.toml"])
 
 # Generate data for query1
 if not os.path.exists(q1_data):
@@ -71,7 +74,7 @@ def measure(name, program, query, data):
         output = subprocess.run(
             cmd,
             capture_output=True,
-            text=True, check=True).stderr
+            text=True).stderr
         seconds = int(output) / 1000
         print("Execution time:", seconds, "sec")
         if iteration >= num_warmups:

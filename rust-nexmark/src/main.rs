@@ -150,7 +150,6 @@ pub fn iter<T: Data>(path: &str) -> impl Iterator<Item = T> {
             .expect("Unable to map file")
     };
     mmap.advise(memmap2::Advice::Sequential).unwrap();
-    mmap.lock().unwrap();
     let mut reader = csv::de::Reader::<1024>::new(',');
     let mut i = 0;
     std::iter::from_fn(move || {

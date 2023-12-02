@@ -9,7 +9,7 @@ WORKDIR /experiment
 
 # Install apt packages
 RUN apt-get update && apt-get install -y \
-  curl wget software-properties-common default-jdk python3 python3-pip
+  curl wget software-properties-common default-jdk python3 python3-pip maven
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -32,6 +32,9 @@ RUN apt-get clean
 
 # Copy the Rust and Java source code into the image
 COPY . .
+
+# Copy Flink configuration
+COPY flink-conf.yaml /opt/flink/conf/flink-conf.yaml
 
 # The default command to run when starting the container could be your experiments
 CMD ["python3", "run.py"]

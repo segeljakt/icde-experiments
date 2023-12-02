@@ -83,9 +83,13 @@ taskmanager.host: localhost
 # Note this accounts for all memory usage within the TaskManager process, including JVM metaspace and other overhead.
 
 taskmanager.memory.process.size: 8192m
+# taskmanager.memory.flink.size: 2048m
 taskmanager.memory.managed.size: 2048m
+taskmanager.memory.network.min: 1024m
+taskmanager.memory.network.max: 2048m
 jobmanager.memory.process.size: 4096m
 taskmanager.memory.managed.fraction: 0.2
+# jobmanager.memory.flink.size: 1024m
 
 # To exclude JVM metaspace and overhead, please, use total Flink memory size instead of 'taskmanager.memory.process.size'.
 # It is not recommended to set both 'taskmanager.memory.process.size' and Flink memory.
