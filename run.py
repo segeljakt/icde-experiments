@@ -105,19 +105,20 @@ width = 0.35  # Width of the bars
 fig, ax = plt.subplots()
 
 
+def g(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
 def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
 
 
 # Plotting the first pair (flink q1-io and flink q1)
 f(ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
          color='none', edgecolor='black', linewidth=0.5))
-f(ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7))
+g(ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7))
 ax.text(x[0], means[0]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (rust q1-io and rust q1)
 f(ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
          color='none', edgecolor='black', linewidth=0.5))
-f(ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7))
+g(ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7))
 ax.text(x[1], means[1]/2, "IO", ha='center', va='center', fontsize=11)
 
 ax.set_ylabel('Execution Time (seconds)')
@@ -150,30 +151,31 @@ fig, ax = plt.subplots()
 
 
 def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def g(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
 
 
 # Plotting the first pair (flink q1)
 f(ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
          color='none', edgecolor='black', linewidth=0.5))
-f(ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7))
+g(ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7))
 ax.text(x[0], means[0]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (rust q1)
 f(ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
          color='none', edgecolor='black', linewidth=0.5))
-f(ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7))
+g(ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7))
 ax.text(x[1], means[1]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (flink q1-opt)
 f(ax.bar(x[2], means[0], width, yerr=std_devs[0], hatch='/',
          color='none', edgecolor='black', linewidth=0.5))
-f(ax.bar(x[2], means[4], width, yerr=std_devs[4], label=labels[4], alpha=0.7))
+g(ax.bar(x[2], means[4], width, yerr=std_devs[4], label=labels[4], alpha=0.7))
 ax.text(x[2], means[0]/2, "IO", ha='center', va='center', fontsize=11)
 
 # Plotting the second pair (rust q1-opt)
 f(ax.bar(x[3], means[1], width, yerr=std_devs[1], hatch='/',
          color='none', edgecolor='black', linewidth=0.5))
-f(ax.bar(x[3], means[5], width, yerr=std_devs[5], label=labels[5], alpha=0.7))
+g(ax.bar(x[3], means[5], width, yerr=std_devs[5], label=labels[5], alpha=0.7))
 ax.text(x[3], means[1]/2, "IO", ha='center', va='center', fontsize=11)
 
 ax.set_ylabel('Execution Time (seconds)')
