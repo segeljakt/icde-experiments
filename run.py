@@ -105,7 +105,7 @@ width = 0.35  # Width of the bars
 fig, ax = plt.subplots()
 
 
-def g(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def g(b): ax.bar_label(b, fmt=formatter, padding=3, label_type='edge')
 def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
 
 
@@ -150,7 +150,7 @@ width = 0.35  # Width of the bars
 fig, ax = plt.subplots()
 
 
-def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def f(b): ax.bar_label(b, fmt=formatter, padding=3, label_type='edge')
 def g(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
 
 
