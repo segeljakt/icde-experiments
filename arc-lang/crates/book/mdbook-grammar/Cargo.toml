@@ -1,0 +1,17 @@
+[package]
+name = "mdbook-grammar"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "mdbook_grammar"
+
+[[bin]]
+name = "mdbook-grammar"
+path = "src/main.rs"
+
+[dependencies]
+regex.workspace      = true
+mdbook.workspace     = true
+serde_json.workspace = true
+anyhow.workspace     = true

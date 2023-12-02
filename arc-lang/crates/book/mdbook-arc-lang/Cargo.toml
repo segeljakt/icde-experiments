@@ -1,0 +1,22 @@
+[package]
+name = "mdbook-arc-lang"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "mdbook_arc_lang"
+
+[[bin]]
+name = "mdbook-arc-lang"
+path = "src/main.rs"
+
+[dependencies]
+regex.workspace       = true
+mdbook.workspace      = true
+serde_json.workspace  = true
+anyhow.workspace      = true
+highlighter.workspace = true
+lexer.workspace       = true
+colored.workspace     = true
+colors.workspace      = true
+indoc.workspace       = true

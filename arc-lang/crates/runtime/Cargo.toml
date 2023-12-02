@@ -1,0 +1,22 @@
+[package]
+name = "runtime"
+version.workspace = true
+edition.workspace = true
+
+[features]
+ml = ["builtins/ml"]
+
+[dependencies]
+macros.workspace = true
+builtins.workspace = true
+runner.workspace = true
+state.workspace = true
+formats.workspace = true
+logging.workspace = true
+
+tokio.workspace = true
+serde.workspace = true
+time.workspace = true
+hexf.workspace = true
+smartstring.workspace = true
+smol_str.workspace = true

@@ -1,0 +1,67 @@
+[book]
+authors      = ["Klas Segeljakt", "Frej Drejhammar"]
+description  = "The Arc-Lang Book"
+language     = "en"
+multilingual = false
+src          = "src"
+title        = "The Arc-Lang Book"
+
+[build]
+build-dir      = "target"
+create-missing = true
+
+[preprocessor.mdbook-exec]
+command  = "mdbook-exec"
+renderer = ["html"]
+after    = ["links"]
+
+[preprocessor.mdbook-arc-lang]
+command  = "mdbook-arc-lang"
+renderer = ["html"]
+after    = ["links"]
+
+[preprocessor.mdbook-grammar]
+command  = "mdbook-grammar"
+renderer = ["html"]
+after    = ["links"]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[preprocessor.bib]
+bibliography = "bibliography.bib"
+title        = "Bibliography"
+
+# Convert all chapter files named README.md into index.md
+[preprocess.index]
+
+# Expands the {{ #playground }}, {{ #include }}, and {{ #rustdoc_include }}
+[preprocess.links]
+
+[output.html]
+theme               = "theme"
+no-section-label    = true
+git_repository_url  = "https://github.com/cda-group/arc"
+git_repository_icon = "fa-github"
+mathjax-support     = true
+curly-quotes        = false
+additional-js       = ["mermaid.min.js", "mermaid-init.js"]
+
+[output.html.playpen]
+editable = false
+copy-js  = false
+
+[output.html.search]
+enable = true
+
+[output.linkcheck]
+follow-web-links = false
+warning-policy   = "error"
+exclude          = [ "bibliography" ]
+
+[output.html.fold]
+enable = true
+level  = 0
+
+[output.html.print]
+enable = true
