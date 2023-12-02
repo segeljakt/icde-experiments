@@ -38,7 +38,7 @@ if not os.path.exists(q1_data):
         "--bid-proportion=100",
         "--auction-proportion=0",
         "--person-proportion=0",
-        "--f-events=" + str(num_events),
+        "--num-events=" + str(num_events),
         "--dir=" + q1_data
     ], check=True)
 
@@ -53,7 +53,7 @@ if not os.path.exists(q3_data):
         "--bid-proportion=0",
         "--auction-proportion=75",
         "--person-proportion=25",
-        "--f-events=" + str(num_events),
+        "--num-events=" + str(num_events),
         "--dir=" + q3_data
     ], check=True)
 
