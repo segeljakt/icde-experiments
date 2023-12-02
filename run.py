@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 flink = ["flink", "run", "flink-nexmark/target/flink-nexmark-1.0-SNAPSHOT.jar"]
 rust = ["./rust-nexmark/target/release/rust-nexmark"]
 
-num_iterations = 10
-num_warmups = 5
+num_iterations = 3
+num_warmups = 2
 num_events = 1_000_000
 q1_data = f"q1-data-{num_events}/"
 q3_data = f"q3-data-{num_events}/"
@@ -78,33 +78,7 @@ def measure(name, program, query, data):
     labels.append(f"{name} {query}")
 
 
-def plot(query, means, std_devs, labels):
-    x = np.arange(len(labels))
-    width = 0.35
-
-    fig, ax = plt.subplots()
-    rects1 = ax.bar(x - width/2, means, width,
-                    label='Execution Time', yerr=std_devs)
-
-    upper_limit = max(means) + max(std_devs)
-    ax.set_ylim(0, upper_limit * 1.1)
-
-    ax.set_ylabel('Execution Time (seconds)')
-    ax.set_title(f'Execution Time by System and Query ({num_events} events)')
-
-    ax.set_xticks(x - width/2)
-    ax.set_xticklabels(labels, ha='center')
-
-    ax.tick_params(axis='x', length=0)
-
-    ax.legend()
-
-    ax.bar_label(rects1, padding=3)
-
-    plt.tight_layout()
-    plt.savefig(f'{query}-{num_events}-{num_iterations}.pdf',
-                bbox_inches='tight')
-
+# Experiment 1 ----------------------------------------------------------------
 
 labels = []
 means = []
@@ -115,7 +89,33 @@ measure("rust", rust, "q1-io", q1_data)
 measure("flink", flink, "q1", q1_data)
 measure("rust", rust, "q1", q1_data)
 
-plot("q1", means, std_devs, labels)
+x = np.arange(2)
+width = 0.35  # Width of the bars
+
+fig, ax = plt.subplots()
+
+# Plotting the first pair (flink q1-io and flink q1)
+ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
+       color='none', edgecolor='black', linewidth=0.5)
+ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7)
+ax.text(x[0], means[0]/2, "IO", ha='center', va='center', fontsize=11)
+
+# Plotting the second pair (rust q1-io and rust q1)
+ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
+       color='none', edgecolor='black', linewidth=0.5)
+ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7)
+ax.text(x[1], means[1]/2, "IO", ha='center', va='center', fontsize=11)
+
+ax.set_ylabel('Execution Time (seconds)')
+ax.set_title(f'Execution Time by System and Query ({num_events} events)')
+ax.set_xticks(x)
+ax.set_xticklabels([labels[2], labels[3]])
+ax.legend()
+
+plt.tight_layout()
+plt.savefig(f'q1-{num_events}-{num_iterations}.pdf', bbox_inches='tight')
+
+# Experiment 2 ----------------------------------------------------------------
 
 labels = []
 means = []
@@ -128,4 +128,40 @@ measure("rust", rust, "q3", q3_data)
 measure("flink", flink, "q3-opt", q3_data)
 measure("rust", rust, "q3-opt", q3_data)
 
-plot("q3", means, std_devs, labels)
+x = np.arange(4)
+width = 0.35  # Width of the bars
+
+fig, ax = plt.subplots()
+
+# Plotting the first pair (flink q1)
+ax.bar(x[0], means[0], width, yerr=std_devs[0], hatch='/',
+       color='none', edgecolor='black', linewidth=0.5)
+ax.bar(x[0], means[2], width, yerr=std_devs[2], label=labels[2], alpha=0.7)
+ax.text(x[0], means[0]/2, "IO", ha='center', va='center', fontsize=11)
+
+# Plotting the second pair (rust q1)
+ax.bar(x[1], means[1], width, yerr=std_devs[1], hatch='/',
+       color='none', edgecolor='black', linewidth=0.5)
+ax.bar(x[1], means[3], width, yerr=std_devs[3], label=labels[3], alpha=0.7)
+ax.text(x[1], means[1]/2, "IO", ha='center', va='center', fontsize=11)
+
+# Plotting the second pair (flink q1-opt)
+ax.bar(x[2], means[0], width, yerr=std_devs[0], hatch='/',
+       color='none', edgecolor='black', linewidth=0.5)
+ax.bar(x[2], means[4], width, yerr=std_devs[4], label=labels[4], alpha=0.7)
+ax.text(x[2], means[0]/2, "IO", ha='center', va='center', fontsize=11)
+
+# Plotting the second pair (rust q1-opt)
+ax.bar(x[3], means[1], width, yerr=std_devs[1], hatch='/',
+       color='none', edgecolor='black', linewidth=0.5)
+ax.bar(x[3], means[5], width, yerr=std_devs[5], label=labels[5], alpha=0.7)
+ax.text(x[3], means[1]/2, "IO", ha='center', va='center', fontsize=11)
+
+ax.set_ylabel('Execution Time (seconds)')
+ax.set_title(f'Execution Time by System and Query ({num_events} events)')
+ax.set_xticks(x)
+ax.set_xticklabels([labels[2], labels[3], labels[4], labels[5]])
+ax.legend()
+
+plt.tight_layout()
+plt.savefig(f'q3-{num_events}-{num_iterations}.pdf', bbox_inches='tight')
