@@ -94,10 +94,18 @@ labels = []
 means = []
 std_devs = []
 
+print(labels)
+print(means)
+print(std_devs)
+
 measure("flink", flink, "q1-io", q1_data)
 measure("rust", rust, "q1-io", q1_data)
 measure("flink", flink, "q1", q1_data)
 measure("rust", rust, "q1", q1_data)
+
+print(labels)
+print(means)
+print(std_devs)
 
 x = np.arange(2)
 width = 0.35  # Width of the bars
@@ -105,8 +113,8 @@ width = 0.35  # Width of the bars
 fig, ax = plt.subplots()
 
 
-def g(b): ax.bar_label(b, fmt=formatter, padding=3, label_type='edge')
-def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def g(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def f(b): ax.bar_label(b, fmt=formatter, padding=3, label_type='edge')
 
 
 # Plotting the first pair (flink q1-io and flink q1)
@@ -144,14 +152,18 @@ measure("rust", rust, "q3", q3_data)
 measure("flink", flink, "q3-opt", q3_data)
 measure("rust", rust, "q3-opt", q3_data)
 
+print(labels)
+print(means)
+print(std_devs)
+
 x = np.arange(4)
 width = 0.35  # Width of the bars
 
 fig, ax = plt.subplots()
 
 
-def f(b): ax.bar_label(b, fmt=formatter, padding=3, label_type='edge')
-def g(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def f(b): ax.bar_label(b, fmt=formatter, padding=0, label_type='edge')
+def g(b): ax.bar_label(b, fmt=formatter, padding=3, label_type='edge')
 
 
 # Plotting the first pair (flink q1)
