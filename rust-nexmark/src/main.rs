@@ -72,7 +72,7 @@ struct Query3 {
 fn query1(bids: Stream<Bid>, ctx: &mut Context) {
     bids.map(ctx, |bid| Query1 {
         auction: bid.auction,
-        price: bid.price * 100 / 85,
+        price: bid.price * 0.91,
         bidder: bid.bidder,
         date_time: bid.date_time,
     })
